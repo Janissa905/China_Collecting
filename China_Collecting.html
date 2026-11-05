@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>中国收集</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a1424'/%3E%3Cpath d='M7 9h11v9H7z' fill='%231f3c60' stroke='%235587c0' stroke-width='1.4'/%3E%3Cpath d='M19 15h7v9h-7z' fill='%231f3c60' stroke='%235587c0' stroke-width='1.4'/%3E%3C/svg%3E" />
+<style>
+  :root{
+    --ocean-0:#03060d;
+    --ocean-1:#0a1424;
+    --ink:#e8f0fb;
+    --ink-dim:#8ba3c2;
+    --ink-faint:#5b7897;
+    --line:rgba(126,178,236,.16);
+    --panel:rgba(11,19,33,.74);
+    --accent:#4fb8ef;
+    --accent-soft:rgba(79,184,239,.16);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(120% 90% at 52% 42%, #0d1b2f 0%, #071120 46%, #03060d 100%);
+    color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Noto Sans SC",
+                system-ui,-apple-system,"Segoe UI",sans-serif;
+    overflow:hidden;
+  }
+  #map{position:fixed;inset:0}
+
+  /* ---------- 标题 ---------- */
+  .brand{
+    position:fixed;top:22px;left:24px;z-index:10;pointer-events:none;
+  }
+  .brand h1{
+    font-size:17px;font-weight:600;letter-spacing:.14em;
+    text-shadow:0 2px 14px rgba(0,0,0,.7);
+  }
+  .brand p{
+    margin-top:5px;font-size:11px;letter-spacing:.22em;
+    color:var(--ink-dim);
+  }
+
+  /* ---------- 右上角控制面板 ---------- */
+  .panel{
+    position:fixed;top:20px;right:20px;z-index:20;width:200px;
+    padding:14px;
+    background:var(--panel);
+    -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+    border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 20px 46px rgba(0,0,0,.5);
+  }
+  .panel .block + .block{margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
+
+  .seg{display:flex;gap:5px;background:rgba(255,255,255,.045);padding:4px;border-radius:9px}
+  .seg button{
+    flex:1;height:29px;border:0;border-radius:6px;cursor:pointer;
+    background:transparent;color:var(--ink-dim);
+    font:600 12px/1 inherit;font-family:inherit;letter-spacing:.06em;
+    transition:background .18s,color .18s;
+  }
+  .seg button:hover{color:var(--ink)}
+  .seg button.on{background:var(--accent-soft);color:#bfe6ff;box-shadow:inset 0 0 0 1px rgba(79,184,239,.36)}
+  .seg button[disabled]{opacity:.45;cursor:progress}
+
+  .switch{
+    width:100%;display:flex;align-items:center;gap:9px;
+    padding:8px 10px;border-radius:9px;cursor:pointer;
+    background:rgba(255,255,255,.035);border:1px solid transparent;
+    color:var(--ink-dim);font:500 12px/1 inherit;font-family:inherit;text-align:left;
+    transition:background .18s,color .18s,border-color .18s;
+  }
+  .switch:hover{background:rgba(255,255,255,.07);color:var(--ink)}
+  .switch .track{
+    flex:0 0 30px;height:17px;border-radius:9px;position:relative;
+    background:rgba(255,255,255,.12);transition:background .2s;
+  }
+  .switch .track::after{
+    content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;
+    background:#7f95b3;transition:transform .2s,background .2s;
+  }
+  .switch.on{color:#bfe6ff;border-color:rgba(79,184,239,.3);background:var(--accent-soft)}
+  .switch.on .track{background:var(--accent)}
+  .switch.on .track::after{transform:translateX(13px);background:#04121d}
+  #collectShowBtn{margin-top:13px}
+
+  .ghost{
+    width:100%;height:31px;margin-top:9px;border-radius:9px;cursor:pointer;
+    background:rgba(255,255,255,.035);border:1px solid var(--line);
+    color:var(--ink-dim);font:500 12px/1 inherit;font-family:inherit;letter-spacing:.06em;
+    transition:background .18s,color .18s;
+  }
+  .ghost:hover{background:rgba(255,255,255,.08);color:var(--ink)}
+  .ghost:disabled{
+    cursor:default;opacity:.38;
+    background:rgba(255,255,255,.02);color:var(--ink-dim);
+  }
+  .ghost:disabled:hover{background:rgba(255,255,255,.02);color:var(--ink-dim)}
+  .ghost.lit{
+    color:#bfe6ff;border-color:rgba(79,184,239,.34);background:var(--accent-soft);
+  }
+  .count{
+    margin-top:9px;font-size:10px;line-height:1.7;letter-spacing:.05em;
+    color:var(--ink-dim);
+  }
+  .count b{font-weight:600;color:#9db9d8}
+  .count.warn{color:#e8b84b}
+
+  /* ---------- 左下状态 ---------- */
+  .status{
+    position:fixed;left:24px;bottom:24px;z-index:10;
+    padding:11px 15px;max-width:330px;
+    background:var(--panel);
+    -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+    border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 14px 34px rgba(0,0,0,.44);
+  }
+  .status .k{font-size:10px;letter-spacing:.2em;color:var(--ink-dim)}
+  .status .v{margin-top:5px;font-size:15px;font-weight:600;letter-spacing:.04em;color:#cfe6ff}
+  .status .v.none{font-weight:400;font-size:13px;color:var(--ink-dim)}
+  .status .m{margin-top:3px;font-size:11px;color:var(--ink-dim);letter-spacing:.05em}
+
+  /* ---------- 记录面板 ---------- */
+  .noteWrap{
+    position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+    padding:24px;background:rgba(3,6,13,.62);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    opacity:0;visibility:hidden;pointer-events:none;
+    transition:opacity .26s ease,visibility .26s ease;
+  }
+  .noteWrap.show{opacity:1;visibility:visible;pointer-events:auto}
+  .noteCard{
+    width:min(380px,92vw);height:min(620px,86vh);display:flex;flex-direction:column;
+    padding:0;overflow:hidden;
+    background:var(--panel);
+    -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+    border:1px solid var(--line);border-radius:18px;
+    box-shadow:0 30px 70px rgba(0,0,0,.62);
+    opacity:0;transform:translateY(18px) scale(.955);
+    transition:opacity .3s ease,transform .34s cubic-bezier(.2,.86,.26,1);
+  }
+  .noteWrap.show .noteCard{opacity:1;transform:translateY(0) scale(1)}
+  .noteHead{
+    display:flex;align-items:center;gap:12px;
+    padding:15px 16px 13px 18px;border-bottom:1px solid var(--line);
+  }
+  .noteHead .t{flex:1;min-width:0}
+  .noteHead .nm{
+    font-size:15px;font-weight:600;letter-spacing:.05em;color:#cfe6ff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .noteHead .sub{margin-top:3px;font-size:11px;color:var(--ink-dim);letter-spacing:.14em}
+  .noteClose{
+    flex:0 0 28px;height:28px;border:0;border-radius:8px;cursor:pointer;
+    background:rgba(255,255,255,.05);color:var(--ink-dim);
+    font:400 14px/1 inherit;font-family:inherit;
+    transition:background .18s,color .18s;
+  }
+  .noteClose:hover{background:rgba(255,255,255,.1);color:var(--ink)}
+  .noteBody{padding:14px 18px;flex:1;min-height:0;display:flex}
+  .noteBody textarea{
+    flex:1;min-height:0;resize:none;
+    background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:11px;
+    padding:14px 16px;color:var(--ink);
+    font:400 13px/1.85 inherit;font-family:inherit;letter-spacing:.04em;
+    outline:none;transition:border-color .2s,background .2s;
+  }
+  .noteBody textarea:focus{border-color:rgba(79,184,239,.42);background:rgba(79,184,239,.06)}
+  .noteBody textarea::placeholder{color:var(--ink-faint)}
+  .noteFoot{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:11px 18px 14px;border-top:1px solid var(--line);
+    font-size:11px;color:var(--ink-dim);letter-spacing:.1em;
+  }
+  .noteFoot .saved{opacity:0;color:#7fd0a8;transition:opacity .3s}
+  .noteFoot .saved.on{opacity:1}
+  .noteFoot .ops{display:flex;gap:8px}
+  .noteFoot .mini{
+    height:28px;padding:0 15px;border-radius:8px;cursor:pointer;
+    background:rgba(255,255,255,.035);border:1px solid var(--line);
+    color:var(--ink-dim);font:500 11px/1 inherit;font-family:inherit;letter-spacing:.1em;
+    transition:background .18s,color .18s,border-color .18s;
+  }
+  .noteFoot .mini:hover{background:rgba(255,255,255,.08);color:var(--ink)}
+  .noteFoot .mini.primary{
+    color:#bfe6ff;border-color:rgba(79,184,239,.34);background:var(--accent-soft);
+  }
+  .noteFoot .mini.danger:hover{background:rgba(255,120,120,.13);color:#ffb3b3}
+
+  /* ---------- 加载态 ---------- */
+  .loading{
+    position:fixed;inset:0;z-index:40;display:none;
+    align-items:center;justify-content:center;
+    background:rgba(3,6,13,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+    font-size:12px;letter-spacing:.24em;color:#9db9d8;
+  }
+  .loading.show{display:flex}
+  .fatal{
+    position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
+    padding:40px;background:#03060d;color:#9db9d8;font-size:13px;line-height:2;text-align:center;
+  }
+  .fatal.show{display:flex}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="brand">
+  <h1>中国收集√</h1>
+  <p>China Collecting</p>
+</div>
+
+<aside class="panel">
+  <div class="block">
+    <div class="seg" id="levelSeg">
+      <button data-level="province" class="on">省级</button>
+      <button data-level="city">地级</button>
+    </div>
+  </div>
+  <div class="block">
+    <button class="switch on" id="outlineBtn" aria-pressed="true">
+      <span class="track"></span><span>显示描边</span>
+    </button>
+    <button class="switch" id="labelBtn" aria-pressed="false">
+      <span class="track"></span><span>显示地区名</span>
+    </button>
+  </div>
+  <div class="block">
+    <button class="ghost" id="collectBtn" disabled>收集</button>
+    <button class="ghost" id="uncollectBtn" disabled>撤销</button>
+    <button class="switch on" id="collectShowBtn" aria-pressed="true">
+      <span class="track"></span><span>收集显示</span>
+    </button>
+    <div class="count" id="collectCount">尚未收集任何区域</div>
+  </div>
+  <div class="block">
+    <button class="ghost" id="noteBtn" disabled>记录</button>
+  </div>
+  <div class="block">
+    <button class="ghost" id="bindBtn">绑定数据文件夹</button>
+    <button class="ghost" id="exportBtn">导出备份</button>
+    <button class="ghost" id="importBtn">导入恢复</button>
+    <input type="file" id="importFile" accept=".json,application/json" hidden />
+  </div>
+</aside>
+
+<div class="status">
+  <div class="k">当 前 选 择</div>
+  <div class="v none" id="selName">未选择</div>
+  <div class="m" id="selMeta">点击任意行政区查看</div>
+</div>
+
+<div class="noteWrap" id="noteWrap">
+  <div class="noteCard" role="dialog" aria-modal="true">
+    <div class="noteHead">
+      <div class="t">
+        <div class="nm" id="noteTitle">—</div>
+        <div class="sub" id="noteSub"></div>
+      </div>
+      <button class="noteClose" id="noteClose" title="关闭">✕</button>
+    </div>
+    <div class="noteBody">
+      <textarea id="noteText" spellcheck="false"
+        placeholder="在此记录关于该行政区的内容…"></textarea>
+    </div>
+    <div class="noteFoot">
+      <span class="saved" id="noteSaved">已保存</span>
+      <div class="ops">
+        <button class="mini danger" id="noteClear">清空</button>
+        <button class="mini primary" id="noteDone">完成</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="loading" id="loading">加载地级数据中…</div>
+<div class="fatal" id="fatal"></div>
+
+<script src="lib/echarts.min.js"></script>
+<script src="data/world.js"></script>
+<script src="data/provinces.js"></script>
+<script src="data/jd.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ============================ 调色板（夜间模式） ============================ */
+  var C = {
+    land:      '#111d31',   // 世界陆地
+    landBd:    '#1b2b45',   // 世界陆地轮廓
+    cn:        '#1f3c60',   // 中国行政区（统一色）
+    cnBdProv:  '#5587c0',   // 省级描边
+    cnBdCity:  '#3f6a9d',   // 地级描边
+    cnHover:   '#2c5580',   // 悬停
+    sel:       '#31a0e2',   // 选中填充
+    selBd:     '#a5e2ff',   // 亮描边（悬停 / 选中）
+    selGlow:   'rgba(96,196,255,.92)',   // 亮描边的光晕
+    jd:        '#3f6a9e'    // 九段线
+  };
+
+  /* “亮起态”（选中 / 悬停）统一使用同一套描边参数。
+     描边必须明显粗于常规描边：相邻行政区会各自描一遍共用边，
+     后画的会盖住先画的中间部分，只有足够粗才能保证
+     整条轮廓亮度一致，不会出现“一边亮一边不亮”。 */
+  var EMPH_ADD  = 1.6;   // 亮起态在常规描边基础上增加的宽度（主图层用）
+  var EMPH_GLOW = 26;    // 亮起态光晕半径
+
+  var MAP        = 'cnInWorld';
+  var MAX_ZOOM   = 120;
+  var MIN_ZOOM   = 0.3;     // 纯兜底；实际最小缩放由 minZoom() 按“完整显示世界”动态计算
+  var FIT_RATIO  = 0.62;    // 默认视图中中国宽度占画布的比例
+  var FIT_RATIO_H = 0.84;   // 默认视图中中国高度占画布的比例
+  var LABEL_COLOR = 'rgba(206,226,248,.82)';   // 行政区名称颜色
+  var LABEL_EMPH  = 'rgba(234,246,255,1)';     // 悬停 / 选中项的名称颜色
+
+  /* 中国完整范围（含南海诸岛与九段线） */
+  var CN_A = [73.5, 3.4], CN_B = [135.1, 53.6], CN_C = [104.3, 30];
+  /* 合并后地图（世界 + 中国）的经纬度范围，用于限制最小缩放 */
+  var BBOX = { w: -180, e: 180, s: -55.78, n: 83.57 };
+
+  /* ============================ 资源检查 ============================ */
+  var missing = [];
+  if (typeof echarts === 'undefined') missing.push('lib/echarts.min.js');
+  if (!window.__WORLD__) missing.push('data/world.js');
+  if (!window.__PROV__)  missing.push('data/provinces.js');
+  if (missing.length) {
+    var fe = document.getElementById('fatal');
+    fe.className = 'fatal show';
+    fe.innerHTML = '资源加载失败，请确认以下文件与 index.html 位于同一目录结构下：<br><b>' +
+                   missing.join('<br>') + '</b>';
+    return;
+  }
+
+  /* ============================ 状态 ============================ */
+  var level    = 'province';
+  var outline  = true;
+  var showLabel = false;      // 打开时默认不显示地名，避免全国视野下名称过密
+  var showCollected = true;   // 收集显示：关闭后收集项仍保留，但不再亮起
+  var selected = null;
+  var cityData = null;
+  var meta     = new Map();
+
+  // 视角：由我们自己持有，任何重绘都显式带上，避免缩放/平移被重置
+  var viewCenter = CN_C.slice();
+  var viewZoom   = 1;
+  var K1 = null, K1LAT = null;   // zoom=1 时 1 经度 / 1 纬度对应的像素数
+
+  var chart = echarts.init(document.getElementById('map'), null, { renderer: 'canvas' });
+  var loadingEl = document.getElementById('loading');
+
+  /* ============================ 工具 ============================ */
+  var ABBR = {
+    '内蒙古自治区': '内蒙古', '广西壮族自治区': '广西', '新疆维吾尔自治区': '新疆',
+    '宁夏回族自治区': '宁夏', '西藏自治区': '西藏',
+    '香港特别行政区': '香港', '澳门特别行政区': '澳门'
+  };
+  function shortName(n) {
+    if (ABBR[n]) return ABBR[n];
+    return String(n).replace(/(特别行政区|自治区|自治州|自治县|地区|盟|省|市|区|县|旗)$/, '');
+  }
+  function num(v) { return (typeof v === 'number' && isFinite(v)) ? v : null; }
+
+  function currentFeatures() {
+    return level === 'province' ? window.__PROV__.features : cityData.features;
+  }
+
+  /* ==== 存储层：桌面应用（Electron）下写本机文件，网页下回退 localStorage ====
+     做成软件后，收集与记录不再存浏览器的 localStorage，而是存到软件目录旁的
+     footprints.json —— 数据跟着软件走，换电脑 / 拷 U 盘整包带走即可带着数据。
+     网页模式下（双击 HTML 直接打开）仍是 localStorage，两者都兼容。 */
+  var __fs = null, __dataFile = null;
+  try { if (typeof require === 'function') __fs = require('fs'); } catch (e) {}
+  /* 桌面版：路径由主进程（main.js）算好、经 preload 注入到 window.__DATA_FILE__。
+     不在渲染进程自己拼 __dirname —— 打包后它指向 app.asar 内部（只读），写不进去。
+     网页版拿不到这个变量，就整条走 localStorage。 */
+  if (__fs && window.__DATA_FILE__) __dataFile = window.__DATA_FILE__;
+  var storage = {
+    _cache: null,
+    _load: function () {
+      if (this._cache) return this._cache;
+      var obj = {};
+      if (__fs && __dataFile) {
+        try { obj = JSON.parse(__fs.readFileSync(__dataFile, 'utf8')) || {}; } catch (e) { obj = {}; }
+      }
+      this._cache = obj;
+      return obj;
+    },
+    getItem: function (k) {
+      var d = this._load();
+      if (d[k] != null) return d[k];
+      try { return localStorage.getItem(k); } catch (e) { return null; }
+    },
+    setItem: function (k, v) {
+      var d = this._load();
+      d[k] = v;
+      if (__fs && __dataFile) {
+        try { __fs.writeFileSync(__dataFile, JSON.stringify(d, null, 2), 'utf8'); } catch (e) {}
+      }
+      try { localStorage.setItem(k, v); } catch (e) {}
+    }
+  };
+
+  /* ==== 自动存档：把收集与记录直接写进「China_Collecting」文件夹 ====
+     网页默认没有权限往磁盘写文件，这是浏览器的安全沙箱，绕不过去。
+     但 Chromium 提供了 File System Access API：由用户亲手选一次文件夹并授权，
+     网页就持有该目录的句柄，此后每次收集 / 记录都自动写入，不再弹窗。
+     句柄存进 IndexedDB，下次打开自动恢复。实测 file:// 下这套 API 可用
+     （isSecureContext 为 true，真实点击调用不报 SecurityError）。
+
+     没绑定文件夹时照旧存 localStorage，功能完全不受影响 —— 绑定只是增强。
+     存档文件 footprints.json 与「导出备份」是同一种格式，两者可互相导入。 */
+  var FILE_NAME = 'footprints.json';
+  var dirHandle = null;     // 用户授权的目录句柄
+  var fileReady = false;    // 句柄已恢复且权限有效
+  var fileTimer = null;
+  var canFS = typeof window.showDirectoryPicker === 'function';
+
+  /* ---- IndexedDB：持久化目录句柄，让下次打开不必重新选文件夹 ---- */
+  function idbOpen() {
+    return new Promise(function (res, rej) {
+      var r = indexedDB.open('chinaCollecting', 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore('kv'); };
+      r.onsuccess = function () { res(r.result); };
+      r.onerror = function () { rej(r.error); };
+    });
+  }
+  function idbSet(k, v) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (res, rej) {
+        var t = db.transaction('kv', 'readwrite');
+        t.objectStore('kv').put(v, k);
+        t.oncomplete = function () { res(); };
+        t.onerror = function () { rej(t.error); };
+      });
+    });
+  }
+  function idbGet(k) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (res, rej) {
+        var t = db.transaction('kv', 'readonly');
+        var q = t.objectStore('kv').get(k);
+        q.onsuccess = function () { res(q.result); };
+        q.onerror = function () { rej(q.error); };
+      });
+    });
+  }
+
+  /* 数据快照：与导出备份同格式 */
+  function snapshot() {
+    return { format: 'china-map-footprint', version: 1,
+             savedAt: new Date().toISOString(),
+             collected: collected, notes: notes };
+  }
+
+  /* mode='ask' 时才弹授权框（必须发生在用户手势内） */
+  function ensurePerm(mode) {
+    if (!dirHandle) return Promise.resolve(false);
+    return dirHandle.queryPermission({ mode: 'readwrite' }).then(function (p) {
+      if (p === 'granted') return true;
+      if (mode === 'ask') {
+        return dirHandle.requestPermission({ mode: 'readwrite' })
+          .then(function (p2) { return p2 === 'granted'; });
+      }
+      return false;
+    }).catch(function () { return false; });
+  }
+
+  function writeFile() {
+    if (!dirHandle) return Promise.resolve(false);
+    return ensurePerm().then(function (ok) {
+      if (!ok) { fileReady = false; updateBindBtn(); return false; }
+      return dirHandle.getFileHandle(FILE_NAME, { create: true })
+        .then(function (fh) { return fh.createWritable(); })
+        .then(function (w) {
+          return w.write(JSON.stringify(snapshot(), null, 2))
+                 .then(function () { return w.close(); })
+                 .then(function () { return true; });
+        })
+        .catch(function () { return false; });
+    });
+  }
+
+  function readFile() {
+    if (!dirHandle) return Promise.resolve(null);
+    return ensurePerm().then(function (ok) {
+      if (!ok) return null;
+      return dirHandle.getFileHandle(FILE_NAME)
+        .then(function (fh) { return fh.getFile(); })
+        .then(function (f) { return f.text(); })
+        .catch(function () { return null; });
+    });
+  }
+
+  /* 把文件内容灌进当前会话，并同步回 localStorage 让两条存储一致 */
+  function adoptSnapshot(txt) {
+    if (!txt) return false;
+    try {
+      var p = JSON.parse(txt);
+      if (Array.isArray(p.collected)) collected = p.collected;
+      if (p.notes && typeof p.notes === 'object') notes = p.notes;
+      storage.setItem(COLL_KEY, JSON.stringify(collected));
+      storage.setItem(NOTES_KEY, JSON.stringify(notes));
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function refreshAfterLoad() {
+    registerMap(); buildMeta(); render(); updateCollectUI();
+  }
+
+  function updateBindBtn() {
+    var b = document.getElementById('bindBtn');
+    if (!b) return;
+    if (!canFS) { b.textContent = '此浏览器不支持自动存档'; b.disabled = true; return; }
+    if (fileReady) b.textContent = '已绑定：' + (dirHandle && dirHandle.name || '数据文件夹');
+    else if (dirHandle) b.textContent = '点击恢复存档连接';
+    else b.textContent = '绑定数据文件夹';
+  }
+
+  /* 收集 / 记录一变就落盘，防抖 400ms 免得连点写太频繁 */
+  function scheduleFileWrite() {
+    if (!fileReady) return;
+    if (fileTimer) clearTimeout(fileTimer);
+    fileTimer = setTimeout(function () {
+      fileTimer = null;
+      writeFile().then(function (ok) { if (ok) flashBtn('bindBtn', '已保存'); });
+    }, 400);
+  }
+
+  function bindFolder() {
+    if (!canFS) return;
+    window.showDirectoryPicker({ id: 'chinaCollecting', mode: 'readwrite' })
+      .then(function (h) {
+        dirHandle = h;
+        return idbSet('dir', h).catch(function () {});
+      })
+      .then(function () { return readFile(); })
+      .then(function (txt) {
+        adoptSnapshot(txt);          // 文件夹里已有存档就直接用它
+        return ensurePerm('ask');
+      })
+      .then(function (ok) {
+        fileReady = ok;
+        updateBindBtn();
+        refreshAfterLoad();
+        if (ok) return writeFile();  // 没有存档时把当前数据写进去
+      })
+      .then(function () {
+        if (fileReady) flashBtn('bindBtn', '已绑定：' + dirHandle.name);
+      })
+      .catch(function (e) {
+        if (e && e.name === 'AbortError') return;   // 用户取消选择，不算错误
+        updateBindBtn();
+      });
+  }
+
+  /* 打开时自动恢复上次绑定的文件夹 */
+  function initFileSync() {
+    if (!canFS) { updateBindBtn(); return; }
+    idbGet('dir')
+      .then(function (h) {
+        if (!h) { updateBindBtn(); return null; }
+        dirHandle = h;
+        return ensurePerm().then(function (ok) {
+          fileReady = ok;
+          updateBindBtn();
+          if (!ok) return null;      // 需要用户点一下按钮重新授权
+          return readFile();
+        }).then(function (txt) {
+          if (adoptSnapshot(txt)) refreshAfterLoad();
+        });
+      })
+      .catch(function () { updateBindBtn(); });
+  }
+
+  /* ==== 收集（常亮标记）====
+     被收集的区域以“选中态”常亮，与当前是否选中无关 —— 选中别的区域、甚至取消
+     选中，它都保持亮起。并且跨层级保持：
+       · 收集了地级单元 -> 切到省级视图时，该地级单元仍单独亮起
+       · 收集了省级区域 -> 切到地级视图时，其下辖全部地级单元一起亮起
+     收集项带 level 字段以记录“收集时所在的层级”，据此做上述双向映射。 */
+  var COLL_KEY = 'chinaMapCollected.v1';
+  var collected = [];      // [{ name, adcode, province, level }]
+
+  /* 收集表与文字记录一样落盘到 localStorage —— 刷新页面后收集的高亮必须还在，
+     否则“点亮”这个核心动作就失去了意义。 */
+  try {
+    var craw = storage.getItem(COLL_KEY);
+    if (craw) {
+      var cparsed = JSON.parse(craw);
+      if (Array.isArray(cparsed)) collected = cparsed;
+    }
+  } catch (e) { collected = []; }
+
+  function persistCollected() {
+    try { storage.setItem(COLL_KEY, JSON.stringify(collected)); } catch (e) {}
+    scheduleFileWrite();          // 绑定了文件夹就同步写一份进去
+  }
+
+  function collectedByName(name) {
+    for (var i = 0; i < collected.length; i++) {
+      if (collected[i].name === name) return collected[i];
+    }
+    return null;
+  }
+
+  /* 当前视图里“应当亮起”的区域名集合（收集项在当前层级的投影）。
+     “收集显示”关闭时返回空集 —— 收集关系依然保留在 collected 里，只是不呈现亮起态。 */
+  function litNames() {
+    var out = new Set();
+    if (!showCollected) return out;
+    collected.forEach(function (c) {
+      if (c.level === level) { out.add(c.name); return; }
+      if (level === 'province' && c.level === 'city') {
+        out.add(c.name);                       // 需额外注入要素，见 extraFeatures()
+      } else if (level === 'city' && c.level === 'province' && cityData) {
+        // 省级收集项展开为其下辖全部地级单元
+        cityData.features.forEach(function (f) {
+          if (f.properties.province === c.name) out.add(f.properties.name);
+        });
+      }
+    });
+    return out;
+  }
+
+  /* 当前视图默认要素里没有、但为了显示收集态必须额外注入的要素。
+     仅“省级视图 + 收集了地级单元”这一种情况：该地级单元并不在省级要素表中。 */
+  function extraFeatures() {
+    // “收集显示”关闭时，省级视图退回原本的要素表，等同于没收集过的样子
+    if (!showCollected) return [];
+    if (level !== 'province' || !cityData || !cityData.features.length) return [];
+    var have = new Set();
+    window.__PROV__.features.forEach(function (f) { have.add(f.properties.name); });
+    return cityData.features.filter(function (f) {
+      return !have.has(f.properties.name) && collectedByName(f.properties.name);
+    });
+  }
+
+  /* ==== 区域记录 ====
+     每个行政区一份文字记录，按名称索引。优先落盘到 localStorage，
+     file:// 或隐私模式下可能被浏览器禁用，故全部用 try/catch 兜底为仅本次会话有效。 */
+  var NOTES_KEY = 'chinaMapNotes.v1';
+  var notes = {};
+  var noteSaveTimer = null, noteFlashTimer = null;
+
+  try {
+    var raw = storage.getItem(NOTES_KEY);
+    if (raw) notes = JSON.parse(raw) || {};
+  } catch (e) { notes = {}; }
+
+  function persistNotes() {
+    try { storage.setItem(NOTES_KEY, JSON.stringify(notes)); } catch (e) {}
+    scheduleFileWrite();          // 同上
+  }
+
+  /* ==== 经度方向平铺：让世界地图左右连通，从一侧可以一直拉回原处 ====
+     陆地与中国行政区都在 -360 / 0 / +360 三个位置各注册一份，
+     于是无论视野落在哪一段经度上，中国都跟着一起出现 ——
+     不会出现“世界接上了、中国却只有半边”的情况。
+     数据以 360° 为周期重复，所以拖过 ±180 时把中心经度归一化即可无缝续上。
+     三份副本按需构建并缓存；注册只在几何真正变化时重做（见 registerMap）。
+     副本名称加 __xp / __xm 后缀以避开同名冲突，显示时再去掉。 */
+  /* 始终铺三份（-360 / 0 / +360）：任何视野、任何缩放下都接得上连续陆地与中国，
+     拖动才真正“左右贯通”而不露白。两份动态切换在宽视野下会频繁换边、反复重建
+     series，导致拖动/缩放乱飞，故回退为稳定三份。视口剔除已把屏幕外副本跳过，
+     实际每帧绘制量可接受。 */
+  var TILES = [-360, 0, 360];
+
+  function tileSuffix(dlng) { return dlng === 0 ? '' : '__x' + (dlng > 0 ? 'p' : 'm'); }
+  function tileName(nm, dlng) { return nm + tileSuffix(dlng); }
+  function baseName(nm) { return String(nm).replace(/__x[pm]$/, ''); }
+
+  var tileCache = new Map();      // 世界陆地
+  var cnTileCache = new Map();    // 中国行政区（按 层级 + 偏移 缓存）
+  var jdTileCache = new Map();    // 九段线
+
+  function walkCoords(coords, dlng) {
+    if (typeof coords[0] === 'number') return [coords[0] + dlng, coords[1]];
+    var out = [];
+    for (var i = 0; i < coords.length; i++) out.push(walkCoords(coords[i], dlng));
+    return out;
+  }
+  /* 名称加后缀、坐标整体平移；cp（名称锚点）也要跟着走，否则副本的名字会飘到区外 */
+  function shiftFeature(f, dlng) {
+    var p = f.properties;
+    var q = { name: tileName(p.name, dlng) };
+    if (p.adcode != null) q.adcode = p.adcode;
+    if (p.province != null) q.province = p.province;
+    if (p.level != null) q.level = p.level;
+    if (p.cp) q.cp = [p.cp[0] + dlng, p.cp[1]];
+    return { type: 'Feature', properties: q,
+             geometry: { type: f.geometry.type,
+                         coordinates: walkCoords(f.geometry.coordinates, dlng) } };
+  }
+  function shiftAll(list, dlng) {
+    return dlng === 0 ? list : list.map(function (f) { return shiftFeature(f, dlng); });
+  }
+  function tileFeatures(dlng) {
+    if (!tileCache.has(dlng)) {
+      tileCache.set(dlng, shiftAll(window.__WORLD__.features, dlng));
+    }
+    return tileCache.get(dlng);
+  }
+  function cnFeatures(dlng) {
+    if (dlng === 0) return currentFeatures();
+    var k = level + '|' + dlng;
+    if (!cnTileCache.has(k)) {
+      cnTileCache.set(k, currentFeatures().map(function (f) { return shiftFeature(f, dlng); }));
+    }
+    return cnTileCache.get(k);
+  }
+  function jdFeatures(dlng) {
+    if (dlng === 0) return window.__JD__.features;
+    if (!jdTileCache.has(dlng)) {
+      jdTileCache.set(dlng, window.__JD__.features.map(function (f) { return shiftFeature(f, dlng); }));
+    }
+    return jdTileCache.get(dlng);
+  }
+  function worldFeatures() {
+    var out = [];
+    TILES.forEach(function (o) { out = out.concat(tileFeatures(o)); });
+    return out;
+  }
+  /* 收集的地级单元在省级视图里也要能画出来，同样按三份平铺 */
+  function extraTiled(dlng) { return shiftAll(extraFeatures(), dlng); }
+
+  /* 把经度归一化到 [-180, 180)；数据已平铺，所以切换副本不会跳 */
+  function wrapLng(lng) { return ((lng + 180) % 360 + 360) % 360 - 180; }
+
+  function buildMeta() {
+    meta = new Map();
+    currentFeatures().concat(extraFeatures()).forEach(function (f) {
+      var p = f.properties;
+      meta.set(p.name, { name: p.name, province: p.province || null,
+                         adcode: p.adcode, level: p.level });
+    });
+  }
+
+  /* 注册地图。重新注册本身几乎不花钱（ECharts 只是留住 GeoJSON，真正解析
+     发生在绘制时），花的是随之而来的 setOption。
+
+     关键：ECharts 对共享同一地图的多个 series，region 的绘制顺序由 GeoJSON 里
+     feature 的先后决定，series 的 z/zlevel 都不起作用。因此要让亮起区域的亮边
+     不被相邻区域盖掉，唯一可靠的办法是把亮起区域的 feature 排在 GeoJSON 最后
+     （后画、置顶）。亮起集合参与 key，收集/撤销/选中都会触发重排。 */
+  var mapRegKey = null;
+  function registerMap() {
+    var exKey = '';
+    if (showCollected && level === 'province') {
+      exKey = extraFeatures().map(function (f) { return f.properties.name; }).join(',');
+    }
+    var lit = litNames();
+    if (selected) lit.add(selected);
+    var litKey = Array.from(lit).sort().join(',');
+    var key = level + '|' + (cityData ? 'c' : 'p') + '|' + exKey + '|' + litKey;
+    if (key === mapRegKey) return;
+    mapRegKey = key;
+
+    var feats = [];
+    var litFeats = [];
+    var push = function (list) { for (var i = 0; i < list.length; i++) feats.push(list[i]); };
+    TILES.forEach(function (dlng) {
+      push(tileFeatures(dlng));                        // ① 世界陆地垫底
+      cnFeatures(dlng).forEach(function (f) {          // ② 中国行政区：未亮起的先画
+        if (lit.has(baseName(f.properties.name))) litFeats.push(f);
+        else feats.push(f);
+      });
+      extraTiled(dlng).forEach(function (f) {          // 注入的地级单元：亮起的同样置顶
+        if (lit.has(baseName(f.properties.name))) litFeats.push(f);
+        else feats.push(f);
+      });
+    });
+    push(litFeats);                                    // ③ 亮起区域排最后（置顶）
+    TILES.forEach(function (dlng) { push(jdFeatures(dlng)); });   // ④ 九段线最上
+    echarts.registerMap(MAP, { type: 'FeatureCollection', features: feats });
+  }
+
+  /* 当前视角下 1 经度 / 1 纬度对应的屏幕像素数 */
+  function pxLng() {
+    try {
+      var a = chart.convertToPixel({ seriesIndex: 0 }, [0, 0]);
+      var b = chart.convertToPixel({ seriesIndex: 0 }, [1, 0]);
+      return (a && b) ? num(Math.abs(b[0] - a[0])) : null;
+    } catch (e) { return null; }
+  }
+  function pxLat() {
+    try {
+      var a = chart.convertToPixel({ seriesIndex: 0 }, [0, 0]);
+      var b = chart.convertToPixel({ seriesIndex: 0 }, [0, 1]);
+      return (a && b) ? num(Math.abs(b[1] - a[1])) : null;
+    } catch (e) { return null; }
+  }
+
+  /* 把图表当前真实视角读回内部状态 */
+  function syncView() {
+    var z = curZoom();
+    if (z != null) viewZoom = z;
+    try {
+      var c = chart.convertFromPixel({ seriesIndex: 0 },
+              [chart.getWidth() / 2, chart.getHeight() / 2]);
+      if (c && isFinite(c[0]) && isFinite(c[1])) viewCenter = [c[0], c[1]];
+    } catch (e) {}
+  }
+
+  /* 图表当前视角是否已与内部状态一致。
+     用于忽略自身 render() 触发的 georoam —— 否则会陷入
+     setOption -> georoam -> setOption 的循环，并让后续拖拽失效。 */
+  function viewSynced() {
+    var z = curZoom();
+    if (z == null || Math.abs(z - viewZoom) > 1e-6) return false;
+    try {
+      var c = chart.convertFromPixel({ seriesIndex: 0 },
+              [chart.getWidth() / 2, chart.getHeight() / 2]);
+      if (!c || !isFinite(c[0]) || !isFinite(c[1])) return false;
+      return Math.abs(c[0] - viewCenter[0]) < 1e-4 &&
+             Math.abs(c[1] - viewCenter[1]) < 1e-4;
+    } catch (e) { return false; }
+  }
+
+  /* 重新测量基准比例：zoom=1 时 1 经度 / 1 纬度各占多少像素。
+     初始化与窗口尺寸变化后需要重新测量；整个过程同步执行，不会闪烁。 */
+  function remeasure() {
+    var keepZ = viewZoom, keepC = viewCenter.slice();
+    chart.setOption({
+      series: [{
+        type: 'map', map: MAP,
+        scaleLimit: { min: 0.01, max: 1000 },   // 临时放宽，避免测量被自身下限截断
+        zoom: 1, center: [0, 0]
+      }]
+    });
+    viewZoom = 1; viewCenter = [0, 0];
+    var p0 = chart.convertToPixel({ seriesIndex: 0 }, [0, 0]);
+    var p1 = chart.convertToPixel({ seriesIndex: 0 }, [1, 0]);
+    var p2 = chart.convertToPixel({ seriesIndex: 0 }, [0, 1]);
+    if (p0 && p1) { var a = num(Math.abs(p1[0] - p0[0])); if (a) K1 = a; }
+    if (p0 && p2) { var b = num(Math.abs(p2[1] - p0[1])); if (b) K1LAT = b; }
+    viewZoom = keepZ; viewCenter = keepC;
+    chart.setOption({ series: [{ zoom: viewZoom, center: viewCenter }] });
+  }
+
+  /* 由当前像素比例反推实际 zoom（不依赖内部私有字段） */
+  function curZoom() {
+    var kx = pxLng();
+    return (kx && K1) ? Math.min(Math.max(kx / K1, MIN_ZOOM), MAX_ZOOM) : viewZoom;
+  }
+
+  /* 允许缩到的最小 zoom：世界地图刚好铺满一屏（再小就开始重复出现）。
+     取横纵两个方向中更“紧”的那个，保证整幅世界地图始终落在视口内。 */
+  function minZoom() {
+    if (!K1 || !K1LAT) return MIN_ZOOM;
+    var zw = chart.getWidth()  / (K1    * (BBOX.e - BBOX.w));
+    var zh = chart.getHeight() / (K1LAT * (BBOX.n - BBOX.s));
+    return Math.min(Math.max(Math.min(zw, zh), MIN_ZOOM), MAX_ZOOM);
+  }
+
+
+  /* 纬度钳制：让“可以拖到的范围”恰好等于“视野范围”，
+     即拖动边界 = 世界地图的南北边界（缩到最小时则完全不能纵向拖）。
+     必须在拖动过程中同步生效，否则会先拖出去、再忽然跳回来。 */
+  function clampLat() {
+    if (!K1LAT || !viewZoom) return false;
+    var hLat = (chart.getHeight() / 2) / (K1LAT * viewZoom);   // 视野半高（度）
+    var lo = BBOX.s + hLat, hi = BBOX.n - hLat;
+    var v = (lo > hi) ? (BBOX.s + BBOX.n) / 2                  // 视野比世界还高 -> 锁在世界中心
+                      : Math.min(Math.max(viewCenter[1], lo), hi);
+    if (Math.abs(v - viewCenter[1]) > 1e-9) { viewCenter[1] = v; return true; }
+    return false;
+  }
+
+  /* 贴边限制：①缩放下限；②纵向不越出世界纬度范围。
+     横向不做任何干预 —— 已按 360° 平铺、左右连通，越界时由副本接上。
+     注意：横向若强行钳制中心，会把用户拖动的视角拉回，表现为“跳来跳去”。 */
+  function clampView() {
+    var changed = false;
+    var mz = minZoom();
+    if (viewZoom < mz - 1e-9) { viewZoom = mz; changed = true; }
+    if (clampLat()) changed = true;
+    return changed;
+  }
+
+  /* 只把视角写回图表（不动 data），按帧节流，供拖动过程中高频调用 */
+  var rafPending = false;
+  function applyView() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(function () {
+      rafPending = false;
+      chart.setOption({
+        series: [{ id: 'base', scaleLimit: { min: minZoom(), max: MAX_ZOOM },
+                   center: [viewCenter[0], viewCenter[1]], zoom: viewZoom }]
+      });
+    });
+  }
+
+  /* ============================ 渲染 ============================ */
+  /* 光晕尺寸随缩放走。视野拉得越小、区域在屏幕上越小，固定尺寸的光晕就会
+     把整块区域糊成一团，并从复杂边界四处喷出不规则的“光刺”。
+     以复位视野（fitZoom）为基准同比缩放：常规视野不变，最小视野约剩 1/5。 */
+  var fitZoom = null;
+  function glowBlur() {
+    var k = (fitZoom && viewZoom) ? viewZoom / fitZoom : 1;
+    var g = EMPH_GLOW * Math.max(0.2, Math.min(1, k));
+    // 量化到 4px 一档：缩放时不必每滚一格就整幅重绘一次
+    return Math.round(g / 4) * 4;
+  }
+
+  /* 上千个要素每次重绘都要交一份 data，逐个新建样式对象会白白吃掉几十毫秒。
+     同类要素的样式完全相同，这里只建一份、让所有要素共用同一个引用
+     （ECharts 只读这些对象），重绘时重建的只有那些轻量的 { name, ... } 壳。 */
+  var WORLD_STYLE = { areaColor: C.land, borderColor: C.landBd, borderWidth: 0.6,
+                      shadowBlur: 0, shadowColor: 'transparent' };
+  var WORLD_EMPH  = { disabled: true,         // 邻国不参与高亮，见下方说明
+                      itemStyle: WORLD_STYLE, label: { show: false } };
+  var WORLD_LABEL = { show: false };
+  var JD_STYLE = { areaColor: 'transparent', borderColor: C.jd, borderWidth: 0.9 };
+  var JD_EMPH  = { itemStyle: JD_STYLE, label: { show: false } };
+
+  var worldItems = null, jdItems = null;
+  function worldData() {
+    if (!worldItems) {
+      worldItems = worldFeatures().map(function (f) {
+        return { name: f.properties.name, kind: 'world',
+                 itemStyle: WORLD_STYLE, emphasis: WORLD_EMPH, label: WORLD_LABEL };
+      });
+    }
+    return worldItems;
+  }
+  function jdData() {
+    if (!jdItems) {
+      var out = [];
+      TILES.forEach(function (dlng) {
+        jdFeatures(dlng).forEach(function (f) {
+          out.push({ name: f.properties.name, kind: 'jd',
+                     itemStyle: JD_STYLE, emphasis: JD_EMPH, label: WORLD_LABEL });
+        });
+      });
+      jdItems = out;
+    }
+    return jdItems;
+  }
+
+  function buildData() {
+    var items = [];
+
+    /* 世界陆地不参与高亮：ECharts 会把悬停区域提到最上层，邻国一旦被提起，
+       它那条暗色描边就会盖住中国边境的描边，表现为“悬停邻国影响中国边界”。
+       这里既禁用 emphasis，也给出与常态完全一致的样式兜底。 */
+    var wd = worldData();
+    for (var wi = 0; wi < wd.length; wi++) items.push(wd[wi]);
+
+    /* 描边只有两套，与“选中 / 悬停 / 层级 / 是否开描边”都无关：
+         · 常规态：常规描边（省级略粗、地级略细），无光晕
+         · 亮起态：亮色描边 + 光晕 —— 选中项默认就保持亮起态，悬停时同样亮起
+       亮起态的描边比常规描边粗 EMPH_ADD：相邻区域会各自描一遍共用边，
+       后画的会盖住先画的中间部分；只有明显更粗，整条轮廓才会亮度一致。 */
+    var isProv = level === 'province';
+    var baseBdColor = isProv ? C.cnBdProv : C.cnBdCity;
+    var baseBdWidth = outline ? (isProv ? 1 : 0.7) : 0;
+    /* 主图层不画光晕。阴影是按区域面积逐帧重算的，视野拉小后区域只有几十像素，
+       26px 的阴影会从复杂边界四处溢出成不规则的“光刺”；拖动时它还是最贵的一笔。
+       光晕已交给上层独立的 lit 叠加层用半透明粗描边来表现。 */
+    var emph = {
+      borderColor: C.selBd,
+      borderWidth: baseBdWidth + EMPH_ADD,
+      shadowBlur: 0,
+      shadowColor: 'transparent'
+    };
+    var merge = function (o) {
+      return { borderColor: emph.borderColor, borderWidth: emph.borderWidth,
+               shadowBlur: 0, shadowColor: 'transparent',
+               areaColor: o.areaColor };
+    };
+
+    /* 收集项与选中项共用同一套“亮起态”，所以收集后即使取消选中也照样亮着。 */
+    var lit = litNames();
+    /* 四种组合各建一份样式对象，供所有同类要素共用：
+       未亮起（常态/悬停）与亮起（常态/悬停）× 是否显示名称。 */
+    var plainStyle = { areaColor: C.cn, borderColor: baseBdColor,
+                       borderWidth: baseBdWidth, shadowBlur: 0,
+                       shadowColor: 'transparent' };
+    var litStyle   = { areaColor: C.sel, borderColor: C.selBd,
+                       borderWidth: baseBdWidth + EMPH_ADD,
+                       shadowBlur: glowBlur(), shadowColor: C.selGlow };
+    var plainEmph  = { itemStyle: merge({ areaColor: C.cnHover }),
+                       label: { show: showLabel, color: LABEL_EMPH } };
+    var litEmph    = { itemStyle: litStyle,
+                       label: { show: showLabel, color: LABEL_EMPH } };
+    var lbOn   = { show: showLabel };
+    var lbOnE  = { show: showLabel, color: LABEL_EMPH };
+    var lbOff  = { show: false };
+
+    /* hideLabel：跨层级注入的地级单元（省级视图里那一小块亮区）不显示名称。
+       它是“从上级视图钻进来”的标记，标名字既读不清也会和省名打架。 */
+    var cnItem = function (f, hideLabel) {
+      var nm = f.properties.name;
+      var base = baseName(nm);                 // 三份副本共用同一个判定结果
+      var isLit = (base === selected) || lit.has(base);
+      if (hideLabel) {
+        return { name: nm, kind: 'cn',
+                 itemStyle: isLit ? litStyle : plainStyle,
+                 emphasis:  isLit ? litEmph  : plainEmph,
+                 label: lbOff };
+      }
+      return { name: nm, kind: 'cn',
+               itemStyle: isLit ? litStyle : plainStyle,
+               emphasis:  isLit ? litEmph  : plainEmph,
+               label: isLit ? lbOnE : lbOn };
+    };
+
+    // 三份副本都要生成：视野跨到哪一段，中国就跟着出现在哪一段。
+    TILES.forEach(function (dlng) {
+      cnFeatures(dlng).forEach(function (f) { items.push(cnItem(f)); });
+      extraTiled(dlng).forEach(function (f) { items.push(cnItem(f, true)); });
+    });
+
+    // 亮起项的轮廓与光晕交给上面单独一层去画，这里只管底色与名称。
+    var jd = jdData();
+    for (var ji = 0; ji < jd.length; ji++) items.push(jd[ji]);
+    return items;
+  }
+
+  /* ---- 帧率：视口剔除 ----
+     地图在 -360 / 0 / +360 三个位置各有一份，共约 1760 个多边形。ECharts 默认
+     不管这些区域在不在屏幕里，每一帧都老老实实全画一遍 —— 这是拖动手感发涩的
+     主因。zrender 自带 culling（用包围盒和视口求交，完全在屏幕外的直接跳过），
+     只是默认没开。关键：map 的区域渲染成 zrender 的 compound（CompoundPath），
+     不是 polygon/polyline，必须对 compound 也开启 culling 才有效。 */
+  function enableCulling() {
+    try {
+      var roots = chart.getZr().storage.getRoots
+        ? chart.getZr().storage.getRoots()
+        : (chart.getZr().storage._roots || []);
+      var walk = function (el) {
+        if (!el) return;
+        if (el.culling !== undefined) el.culling = true;   // compound/polygon/polyline 等
+        if (el.isGroup && el.childrenRef) el.childrenRef().forEach(walk);
+        else if (el.children) el.children.forEach(walk);
+      };
+      /* 注意：getRoots() 返回的是数组，必须逐个喂给 walk。
+         写成 walk(roots) 会把数组当单个元素处理 —— 数组既没有 .style
+         也没有 .children，递归一步都进不去，整段代码就成了空转。 */
+      roots.forEach(walk);
+    } catch (e) {}
+  }
+
+  /* 手势期间降级光晕：canvas 阴影是按区域面积逐帧重算的，缩小时视野大、
+     可见的亮起区域多，阴影就成了最贵的一笔。拖动 / 缩放进行中把 shadowBlur
+     临时降到 0（只改现有 compound 元素、不调 render，避免打断拖拽），停手再恢复。
+     现找现改、不缓存元素引用，因为重绘后元素会被 ECharts 换掉。 */
+  function setGlowDim(dim) {
+    try {
+      var roots = chart.getZr().storage.getRoots
+        ? chart.getZr().storage.getRoots()
+        : (chart.getZr().storage._roots || []);
+      var walk = function (el) {
+        if (!el) return;
+        var st = el.style;
+        /* 判定只看「有没有 shadowBlur 这个字段」，不能要求它 > 0：
+           卸光晕后 shadowBlur 已经是 0，若写成 > 0，恢复分支就永远进不去，
+           表现为「松手后光晕再也不回来」。 */
+        if (st && typeof st.shadowBlur === 'number') {
+          if (dim) {
+            if (st.shadowBlur > 0 && el.__g0 == null) {
+              el.__g0 = st.shadowBlur; st.shadowBlur = 0; el.dirty();
+            }
+          } else if (el.__g0 != null) {
+            st.shadowBlur = el.__g0; el.__g0 = null; el.dirty();
+          }
+        }
+        if (el.isGroup && el.childrenRef) el.childrenRef().forEach(walk);
+        else if (el.children) el.children.forEach(walk);
+      };
+      roots.forEach(walk);          // 同上：roots 是数组，必须逐个遍历
+    } catch (e) {}
+  }
+
+  /* 亮起区域的填充、亮边、光晕（shadowBlur）现在全部由主图层承担：亮起项已排到
+     GeoJSON 最后、天然置顶，shadowBlur 在实色填充上正常扩散。不再需要独立的
+     叠加图层 —— 曾用它画轮廓，但 ECharts 对共享地图的多个 series 绘制次序不受
+     z/zlevel 控制，叠加层反而时灵时不灵。这里保留空返回，兼容 render/focusTo
+     的既有结构。 */
+  function litLayers() {
+    return [];
+  }
+
+  var lastGlow = null;
+  function render() {
+    registerMap();          // 换层级 / 换边 / 注入收集单元后，几何要重新注册
+    lastGlow = glowBlur();
+    chart.setOption({
+      backgroundColor: 'transparent',
+      animation: true,
+      animationDuration: 600,
+      animationDurationUpdate: 0,          // 更新即时生效，避免缩放时出现跳动
+      tooltip: {
+        trigger: 'item',
+        backgroundColor: 'rgba(10,18,31,.92)',
+        borderColor: 'rgba(126,178,236,.24)',
+        borderWidth: 1,
+        padding: [9, 13],
+        textStyle: { color: '#e8f0fb', fontSize: 12 },
+        extraCssText: 'backdrop-filter:blur(8px);border-radius:9px;' +
+                      'box-shadow:0 12px 30px rgba(0,0,0,.5)',
+        formatter: function (p) {
+          var nm = baseName(p.name);                         // 去掉平铺副本后缀
+          if (nm === '__JD__') return '';
+          var m = meta.get(nm);
+          if (!m) return '<span style="color:#8ba3c2">' + nm + '</span>';
+          var html = '<div style="font-size:13px;font-weight:600;' +
+                     'letter-spacing:.05em">' + m.name + '</div>';
+          if (m.province) {
+            html += '<div style="margin-top:3px;font-size:11px;' +
+                    'color:#8ba3c2">' + m.province + '</div>';
+          }
+          html += '<div style="margin-top:5px;font-size:10px;color:#5f7897;' +
+                  'letter-spacing:.12em">ADCODE ' + m.adcode + '</div>';
+          return html;
+        }
+      },
+      series: [{
+        id: 'base',
+        type: 'map',
+        map: MAP,
+        roam: true,
+        scaleLimit: { min: minZoom(), max: MAX_ZOOM },
+        center: viewCenter,      // 每次重绘都显式带上当前视角
+        zoom: viewZoom,
+        nameProperty: 'name',
+        selectedMode: false,
+        itemStyle: { areaColor: C.cn, borderColor: C.cnBdProv, borderWidth: 1,
+                     shadowBlur: 0, shadowColor: 'transparent' },
+        label: {
+          show: showLabel,
+          formatter: function (p) {
+            var nm = baseName(p.name);
+            return nm === '__JD__' ? '' : shortName(nm);
+          },
+          color: LABEL_COLOR,
+          fontSize: 10,
+          textShadowColor: 'rgba(0,0,0,.85)',
+          textShadowBlur: 5
+        },
+        emphasis: {
+          focus: 'none',                       // 悬停只影响自身，不弱化其他区域
+          label: { show: showLabel, color: LABEL_EMPH, fontSize: 12 },
+          itemStyle: { shadowBlur: 0, shadowColor: 'transparent' }
+        },
+        blur: { itemStyle: { opacity: 1 } },   // 悬停某个区域时，其余区域不做任何弱化
+        data: buildData()
+      }].concat(litLayers())
+    });
+    enableCulling();
+  }
+
+  /* 同步视角 -> 限制 -> 重绘 */
+  function syncAndRender() {
+    syncView();
+    clampView();
+    render();
+  }
+
+  /* ============================ 视图定位 ============================ */
+  // 让中国完整（含南海）铺满视口 62% 宽 / 84% 高
+  function fitChina() {
+    // 必须重新测量：remeasure() 会临时放开 scaleLimit，否则下面的 zoom:1
+    // 会被上一次渲染写入的 scaleLimit.min 截断，导致复位后直接落到最小缩放。
+    remeasure();
+    // 固定到 zoom=1 的基准状态再测量（此时 scaleLimit 已被 remeasure 放开）
+    chart.setOption({ series: [{ zoom: 1, center: CN_C }] });
+    viewZoom = 1; viewCenter = CN_C.slice();
+    var a = chart.convertToPixel({ seriesIndex: 0 }, CN_A);
+    var b = chart.convertToPixel({ seriesIndex: 0 }, CN_B);
+    var z = 3.2;                                   // 兜底值
+    if (a && b) {
+      var w = Math.abs(b[0] - a[0]), h = Math.abs(b[1] - a[1]);
+      if (w > 0 && h > 0) {
+        z = Math.min(chart.getWidth()  * FIT_RATIO  / w,
+                         chart.getHeight() * FIT_RATIO_H / h);
+      }
+    }
+    viewCenter = CN_C.slice();
+    viewZoom = Math.min(Math.max(z, minZoom()), MAX_ZOOM);
+    fitZoom = viewZoom;          // 之后的光晕半径都以这个视野为基准
+    render();
+  }
+
+  /* ============================ 交互 ============================ */
+  function setStatus() {
+    var n = document.getElementById('selName');
+    var m = document.getElementById('selMeta');
+    if (!selected) {
+      n.textContent = '未选择'; n.className = 'v none';
+      m.textContent = '点击任意行政区查看';
+    } else {
+      var d = meta.get(selected) || { name: selected, province: null, adcode: '' };
+      n.textContent = d.name; n.className = 'v';
+      m.textContent = d.adcode || '';    // 只留行政区划代码，不再显示“某省 · 地级行政区”
+    }
+    updateCollectUI();                   // 收集按钮跟随当前选中项
+  }
+
+  chart.on('click', function (p) {
+    var nm = baseName(p.name);                    // 平铺副本与本体视为同一区域
+    if (nm === '__JD__') return;
+    if (!meta.has(nm)) {                          // 点击其它国家或空白
+      if (selected) { selected = null; clampView(); render(); setStatus(); }
+      return;
+    }
+    selected = (selected === nm) ? null : nm;
+    clampView(); render(); setStatus();
+  });
+
+  chart.getZr().on('click', function (e) {
+    if (!e.target && selected) { selected = null; clampView(); render(); setStatus(); }
+  });
+
+  // 拖拽 / 滚轮后校正视角（防抖，滚动过程中不重绘）
+  var roamTimer = null;
+  var roaming = false;               // 手势进行中
+  chart.on('georoam', function () {
+    /* 手势期间卸掉光晕以保帧率。必须每次 roam 都刷一遍，不能只做一次：
+       拖动过程中 ECharts 每帧都会把 itemStyle 重新套回元素上，
+       只在手势开始时改一次会被立刻覆盖，等于没改。
+       遍历一千多个元素不到 1ms，逐帧执行的开销可以忽略。 */
+    roaming = true;
+    setGlowDim(true);
+    // 视角校正必须在拖动过程中同步执行 —— 放进防抖里会表现为
+    // 「先拖出去、再忽然跳回来」。
+    if (!viewSynced()) syncView();
+
+    // 横向：一旦跨过 ±180 就立刻把中心经度折回 [-180,180)。
+    // 数据已按 360° 平铺三份，所以折回后看到的内容是连续的、不会跳；
+    // 关键在于中心永远留在原图范围内，ECharts 内部对地图边界的限制
+    // 因此永远不会触发 —— 这才是真正的左右贯通（绕一圈能回到原点）。
+    var before = viewCenter[0];
+    viewCenter[0] = wrapLng(before);
+    var wrapped = Math.abs(viewCenter[0] - before) > 1e-6;
+
+    // 贴边校正：把视角拉回限制范围（setOption 同步到 series）
+    if (clampLat() || wrapped) applyView();
+
+    if (roamTimer) clearTimeout(roamTimer);
+    roamTimer = setTimeout(function () {
+      roaming = false;
+      setGlowDim(false);             // 先把手势期间卸掉的光晕原样补回
+      // 光晕尺寸随缩放走，缩放跨档了就重画一次。
+      // 这条判断必须放在 viewSynced 拦截之前 —— 缩放是 roam 自己改的，
+      // 内部状态早已同步，会被当成“自身重绘触发的 georoam”直接忽略掉。
+      if (glowBlur() !== lastGlow) { render(); return; }
+      // 由自身重绘触发的 georoam 直接忽略，避免 setOption -> georoam -> setOption 死循环
+      if (viewSynced()) return;
+      syncView();
+      if (clampView()) render();
+      else applyView();
+    }, 180);
+  });
+
+  chart.getZr().on('dblclick', function () {
+    selected = null; setStatus(); fitChina();
+  });
+
+  // 层级切换
+  document.getElementById('levelSeg').addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn || btn.classList.contains('on') || btn.disabled) return;
+    var next = btn.dataset.level;
+    if (next === 'city' && !cityData) { loadCities(btn); return; }
+    applyLevel(next);
+  });
+
+  function applyLevel(next) {
+    level = next;
+    selected = null;
+    [].forEach.call(document.querySelectorAll('#levelSeg button'), function (b) {
+      b.classList.toggle('on', b.dataset.level === level);
+    });
+    registerMap();
+    buildMeta();
+    syncView();
+    clampView();
+    render();          // render() 内部会按当前缩放重算名称透明度
+    setStatus();
+  }
+
+  /* btn 为空表示“启动时自动加载”：不做按钮态，失败也不整页报错，
+     而是留在省级视图并在数据区提示，避免缺一个文件就让整张地图不可用。 */
+  function loadCities(btn) {
+    var old = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = '加载中'; }
+    loadingEl.classList.add('show');
+    var s = document.createElement('script');
+    s.src = 'data/cities.js';
+    var settle = function () {
+      loadingEl.classList.remove('show');
+      if (btn) { btn.disabled = false; btn.textContent = old; }
+    };
+    var fail = function () {
+      if (btn) { showFatal('地级数据加载失败，请确认 <b>data/cities.js</b> 存在。'); }
+      else { console.warn('地级数据加载失败，已留在省级视图'); }
+    };
+    s.onload = function () {
+      settle();
+      if (!window.__CITY__) { fail(); return; }
+      cityData = window.__CITY__;
+      applyLevel('city');
+    };
+    s.onerror = function () { settle(); fail(); };
+    document.head.appendChild(s);
+  }
+
+  function showFatal(html) {
+    var f = document.getElementById('fatal');
+    f.className = 'fatal show';
+    f.innerHTML = html;
+  }
+
+  // 描边开关
+  document.getElementById('outlineBtn').addEventListener('click', function () {
+    outline = !outline;
+    this.classList.toggle('on', outline);
+    this.setAttribute('aria-pressed', String(outline));
+    clampView(); render();
+  });
+
+  // 地区名开关
+  document.getElementById('labelBtn').addEventListener('click', function () {
+    showLabel = !showLabel;
+    this.classList.toggle('on', showLabel);
+    this.setAttribute('aria-pressed', String(showLabel));
+    render();
+  });
+
+  /* 收集显示开关：只切换“亮起”这一呈现层，collected 列表本身不动，
+     所以关掉后收集的区块只是不亮，重新打开立刻恢复亮起。 */
+  document.getElementById('collectShowBtn').addEventListener('click', function () {
+    // 先把当前亮着的收集项全部撤下高亮，否则关闭后残留的 emphasis 状态不会消失
+    Array.from(litNames()).forEach(function (nm) {
+      if (nm === selected) return;              // 选中项保持亮起
+      try { chart.dispatchAction({ type: 'downplay', seriesIndex: 0, name: nm }); }
+      catch (e) {}
+    });
+    showCollected = !showCollected;
+    this.classList.toggle('on', showCollected);
+    this.setAttribute('aria-pressed', String(showCollected));
+    registerMap(); buildMeta();
+    // 关闭时跨层级注入的要素被移除，其选中态若不清理，状态栏会留下空名
+    if (selected && !meta.has(selected)) selected = null;
+    render(); setStatus(); updateCollectUI();
+  });
+
+  /* ---- 收集 / 撤销 ----
+     收集：把当前选中的区域加入收集表，之后它以选中态常亮，取消选中也不熄灭，
+           并且跨层级保持（地级收集项在省级视图仍亮，省级收集项在地级视图
+           由下辖全部地级单元一起亮）。
+     撤销：把当前选中的区域从收集表移除，恢复常态。 */
+  function currentMeta() {
+    return selected ? (meta.get(selected) || null) : null;
+  }
+
+  document.getElementById('collectBtn').addEventListener('click', function () {
+    var d = currentMeta();
+    if (!d || collectedByName(d.name)) return;
+    collected.push({ name: d.name, adcode: d.adcode,
+                     province: d.province || null, level: d.level });
+    persistCollected();
+    registerMap(); buildMeta(); render(); updateCollectUI();
+  });
+
+  document.getElementById('uncollectBtn').addEventListener('click', function () {
+    var d = currentMeta();
+    if (!d) return;
+    collected = collected.filter(function (c) { return c.name !== d.name; });
+    persistCollected();
+    registerMap(); buildMeta();
+    // 撤销的可能是一个“仅因被收集才注入当前视图”的跨层级单元，
+    // 移除后它已不在地图要素里，选中态必须一并清掉，否则状态栏会留下空名。
+    if (selected && !meta.has(selected)) selected = null;
+    render(); setStatus();               // 走 setStatus，状态栏与按钮一起刷新
+  });
+
+  /* ---- 区域记录 ----
+     选中一个行政区后点「记录」，平滑弹出输入框；内容按区域名存取，
+     再次打开会带出上次写的内容，可以继续编辑。 */
+  var noteRegion = null;      // 当前正在编辑的区域名（null 表示弹窗未打开）
+
+  function $(id) { return document.getElementById(id); }
+
+  function flashSaved() {
+    $('noteSaved').classList.add('on');
+    if (noteFlashTimer) clearTimeout(noteFlashTimer);
+    noteFlashTimer = setTimeout(function () {
+      $('noteSaved').classList.remove('on');
+    }, 1500);
+  }
+
+  function openNote() {
+    var d = currentMeta();
+    if (!d) return;
+    noteRegion = d.name;
+    $('noteTitle').textContent = d.name;
+    $('noteSub').textContent = d.adcode ? ('行政区划代码 ' + d.adcode) : '';
+    $('noteText').value = notes[noteRegion] || '';   // 再次打开沿用上次内容
+    $('noteSaved').classList.remove('on');
+    $('noteWrap').classList.add('show');
+    // 等展开动画走完再聚焦，否则光标会让过渡显得发抖
+    setTimeout(function () { $('noteText').focus(); }, 340);
+  }
+
+  function closeNote() {
+    if (noteRegion) writeNote($('noteText').value);
+    noteRegion = null;
+    $('noteWrap').classList.remove('show');
+    $('noteText').blur();
+    updateCollectUI();
+  }
+
+  function writeNote(v) {
+    if (!noteRegion) return;
+    v = String(v || '');
+    if (v.trim()) notes[noteRegion] = v; else delete notes[noteRegion];
+    persistNotes();
+  }
+
+  $('noteBtn').addEventListener('click', openNote);
+  $('noteClose').addEventListener('click', closeNote);
+  $('noteDone').addEventListener('click', closeNote);
+
+  $('noteClear').addEventListener('click', function () {
+    $('noteText').value = '';
+    if (noteRegion) { delete notes[noteRegion]; persistNotes(); }
+    updateCollectUI();
+    $('noteText').focus();
+  });
+
+  // 边打边存（防抖）：即使忘了点「完成」，内容也不会丢
+  $('noteText').addEventListener('input', function () {
+    if (!noteRegion) return;
+    writeNote(this.value);
+    if (noteSaveTimer) clearTimeout(noteSaveTimer);
+    noteSaveTimer = setTimeout(flashSaved, 600);
+  });
+
+  // 点遮罩空白处关闭（点在卡片上不关）
+  $('noteWrap').addEventListener('mousedown', function (e) {
+    if (e.target === this) closeNote();
+  });
+
+  // Esc 关闭
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && $('noteWrap').classList.contains('show')) closeNote();
+  });
+
+  /* 收集按钮的状态跟随“当前选中项”：
+     未选中 -> 两个按钮都禁用；已选中且已收集 -> 只能撤销；已选中未收集 -> 只能收集。 */
+  function updateCollectUI() {
+    var d = currentMeta();
+    var has = !!(d && collectedByName(d.name));
+    var cb = document.getElementById('collectBtn');
+    var ub = document.getElementById('uncollectBtn');
+    var nb = document.getElementById('noteBtn');
+    cb.disabled = !d || has;
+    ub.disabled = !d || !has;
+    ub.classList.toggle('lit', !!d && has);
+    cb.textContent = '收集';
+    ub.textContent = '撤销';
+
+    // 记录按钮跟随选中项；已有记录时点亮，便于分辨哪些区域写过东西
+    nb.disabled = !d;
+    nb.classList.toggle('lit', !!(d && notes[d.name]));
+
+    // 只报数量，不罗列地名
+    document.getElementById('collectCount').innerHTML = collected.length
+      ? '已收集 <b>' + collected.length + '</b> 个区域'
+      : '尚未收集任何区域';
+  }
+
+  /* ---- 数据备份 ----
+     收集表加文字记录全部加起来通常不到 20KB，导出成一个 JSON 文件是最省的兜底：
+     清浏览器缓存、换电脑、换浏览器都不会丢。
+     操作反馈直接写在按钮文字上、1.6 秒后复原 —— 不再占用面板位置。 */
+  var flashTimers = {};
+
+  function flashBtn(id, msg) {
+    var b = document.getElementById(id);
+    if (!b) return;
+    if (!flashTimers[id]) flashTimers[id] = { text: b.textContent };
+    if (flashTimers[id].timer) clearTimeout(flashTimers[id].timer);
+    b.textContent = msg;
+    flashTimers[id].timer = setTimeout(function () {
+      b.textContent = flashTimers[id].text;
+    }, 1600);
+  }
+
+  document.getElementById('bindBtn').addEventListener('click', function () {
+    /* 已有句柄但权限失效：只重新申请授权，不必再选一次文件夹 */
+    if (dirHandle && !fileReady) {
+      ensurePerm('ask').then(function (ok) {
+        fileReady = ok;
+        updateBindBtn();
+        if (ok) { writeFile().then(function () { flashBtn('bindBtn', '已恢复连接'); }); }
+        else flashBtn('bindBtn', '未授权');
+      });
+      return;
+    }
+    bindFolder();
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', function () {
+    // 弹窗若还开着，先把正在编辑的内容落进 notes，避免导出漏掉最后一次输入
+    if (noteRegion) { notes[noteRegion] = $('noteText').value; persistNotes(); }
+
+    var payload = {
+      format: 'china-map-footprint',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      collected: collected,
+      notes: notes
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)],
+                        { type: 'application/json;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var d = new Date();
+    var p2 = function (v) { return ('0' + v).slice(-2); };
+    a.href = url;
+    a.download = '足迹备份-' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate())
+                 + '.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 0);
+    flashBtn('exportBtn', '已导出 ' + collected.length + ' 个');
+  });
+
+  document.getElementById('importBtn').addEventListener('click', function () {
+    $('importFile').click();
+  });
+
+  document.getElementById('importFile').addEventListener('change', function () {
+    var f = this.files && this.files[0];
+    this.value = '';                    // 清空以便连续导入同一个文件
+    if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      var p = null;
+      try { p = JSON.parse(fr.result); } catch (e) { p = null; }
+      if (!p || !Array.isArray(p.collected)) { flashBtn('importBtn', '文件无法识别'); return; }
+      collected = p.collected.filter(function (c) { return c && c.name; });
+      notes = (p.notes && typeof p.notes === 'object' && !Array.isArray(p.notes))
+        ? p.notes : {};
+      persistCollected(); persistNotes();
+      // 导入的收集表可能不含当前选中项，先撤下再清空，避免状态栏留下空名
+      if (selected) {
+        try { chart.dispatchAction({ type: 'downplay', seriesIndex: 0, name: selected }); }
+        catch (e) {}
+      }
+      selected = null;
+      registerMap(); buildMeta(); render(); setStatus(); updateCollectUI();
+      flashBtn('importBtn', '已恢复 ' + collected.length + ' 个');
+    };
+    fr.onerror = function () { flashBtn('importBtn', '读取失败'); };
+    fr.readAsText(f);
+  });
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    chart.resize();
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(syncAndRender, 200);
+  });
+
+  /* 调试用：外部（puppeteer / 控制台）可调用，直接设置视野中心与缩放，
+     同时同步内部状态，避免 render() 把临时 setOption 的视角覆盖回去。 */
+  window.focusTo = function (lng, lat, z) {
+    viewCenter = [lng, lat];
+    viewZoom = z;
+    clampView();
+    // 用 replaceMerge 强制重建 series，确保 center/zoom 被 ECharts 真正应用
+    chart.setOption({
+      animationDurationUpdate: 0,
+      series: [{
+        type: 'map', map: MAP, roam: true,
+        scaleLimit: { min: minZoom(), max: MAX_ZOOM },
+        center: viewCenter.slice(), zoom: viewZoom,
+        nameProperty: 'name', selectedMode: false,
+        itemStyle: { areaColor: C.cn, borderColor: C.cnBdProv, borderWidth: 1,
+                     shadowBlur: 0, shadowColor: 'transparent' },
+        label: { show: showLabel,
+                 formatter: function (p) { return p.name === '__JD__' ? '' : shortName(p.name); },
+                 color: LABEL_COLOR, fontSize: 10,
+                 textShadowColor: 'rgba(0,0,0,.85)', textShadowBlur: 5 },
+        emphasis: {
+          focus: 'none',
+          label: { show: showLabel, color: LABEL_EMPH, fontSize: 12 },
+          itemStyle: { shadowBlur: 0, shadowColor: 'transparent' }
+        },
+        blur: { itemStyle: { opacity: 1 } },
+        data: buildData()
+      }].concat(litLayers())
+    }, { replaceMerge: ['series'] });
+  };
+
+  /* ============================ 启动 ============================ */
+  // 先完整渲染一次，建立 series 与坐标系，之后的视角测量才有效
+  registerMap();
+  buildMeta();
+  render();
+  fitChina();
+  setStatus();
+  // 默认进入地级视图：先出省级保证首屏不空，地级数据到位后自动切过去
+  loadCities(null);
+  // 尝试恢复上次绑定的数据文件夹（异步，不影响首屏）
+  initFileSync();
+})();
+</script>
+</body>
+</html>
